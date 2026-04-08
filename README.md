@@ -7,6 +7,7 @@
 ---
 
 ## 这套系统做什么
+
 ```bash
 python3 main.py
 ```
@@ -36,17 +37,18 @@ python3 main.py
 ## 快速开始
 
 ### 安装
+
 ```bash
 git clone https://github.com/wilingna/ai-content-pipeline
 cd ai-content-pipeline
 pip install openai
 cp .env.template .env
-# 填入你的 OPENROUTER_API_KEY
 ```
 
-### 配置你的创作者画像
+### 配置创作者画像
 
 编辑 `user_profile.json`，填入你自己的信息：
+
 ```json
 {
   "creator": "你的名字",
@@ -61,6 +63,7 @@ cp .env.template .env
 ```
 
 ### 运行
+
 ```bash
 python3 main.py
 ```
@@ -71,7 +74,10 @@ python3 main.py
 
 ## 模型配置
 
-在 `.env` 里按需替换任意节点的模型：OPENROUTER_API_KEY=sk-or-...
+在 `.env` 里按需替换任意节点的模型：
+
+```
+OPENROUTER_API_KEY=sk-or-...
 TREND_MODEL=perplexity/sonar
 TOPIC_MODEL=openai/gpt-5.4
 STRUCTURE_MODEL=anthropic/claude-sonnet-4.6
@@ -81,6 +87,7 @@ REVIEW_EDITOR_MODEL=anthropic/claude-sonnet-4.6
 REVIEW_CRITIC_MODEL=google/gemini-3.1-pro-preview
 REVIEW_FINAL_MODEL=openai/gpt-5.4-mini
 PUBLISH_MODEL=anthropic/claude-sonnet-4.6
+```
 
 只需一个 [OpenRouter](https://openrouter.ai) Key，调用所有模型。
 
@@ -99,6 +106,8 @@ PUBLISH_MODEL=anthropic/claude-sonnet-4.6
 ---
 
 ## 每次运行的输出文件
+
+```
 runs/2026-04-08-111948/
 ├── 01_trend.json      # 趋势情报+3个候选选题
 ├── 02_topic.json      # 最终选题+选题理由
@@ -107,6 +116,7 @@ runs/2026-04-08-111948/
 ├── 05_emotion_v1.json # 情绪优化版
 ├── 06_review_v1.json  # 三方质检报告+分数
 └── 07_publish.json    # 四平台标题/简介/tags
+```
 
 ---
 
