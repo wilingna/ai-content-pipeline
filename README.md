@@ -71,4 +71,45 @@ python3 main.py
 
 ## 模型配置
 
-在 `.env` 里按需替换任意节点的模型：
+在 `.env` 里按需替换任意节点的模型：OPENROUTER_API_KEY=sk-or-...
+TREND_MODEL=perplexity/sonar
+TOPIC_MODEL=openai/gpt-5.4
+STRUCTURE_MODEL=anthropic/claude-sonnet-4.6
+SCRIPT_MODEL=anthropic/claude-sonnet-4.6
+EMOTION_MODEL=openai/gpt-5.4
+REVIEW_EDITOR_MODEL=anthropic/claude-sonnet-4.6
+REVIEW_CRITIC_MODEL=google/gemini-3.1-pro-preview
+REVIEW_FINAL_MODEL=openai/gpt-5.4-mini
+PUBLISH_MODEL=anthropic/claude-sonnet-4.6
+
+只需一个 [OpenRouter](https://openrouter.ai) Key，调用所有模型。
+
+---
+
+## 真Agent vs 伪Agent
+
+| | 伪Agent | 真Agent（FLUX） |
+|---|---|---|
+| 运行方式 | 同一对话窗口切换角色 | 每个节点独立API调用 |
+| 上下文 | 全部混在一起 | JSON字段传递，零干扰 |
+| 质检客观性 | 同一模型审自己，偏向打高分 | 换不同模型质检，结果更客观 |
+| 出错处理 | 靠模型自己判断，不稳定 | 程序控制，低于7分必退回 |
+| 批量运行 | 做不到 | 循环调用，睡觉它在跑 |
+
+---
+
+## 每次运行的输出文件
+runs/2026-04-08-111948/
+├── 01_trend.json      # 趋势情报+3个候选选题
+├── 02_topic.json      # 最终选题+选题理由
+├── 03_structure.json  # 视频骨架
+├── 04_script_v1.json  # 初稿
+├── 05_emotion_v1.json # 情绪优化版
+├── 06_review_v1.json  # 三方质检报告+分数
+└── 07_publish.json    # 四平台标题/简介/tags
+
+---
+
+## License
+
+MIT
