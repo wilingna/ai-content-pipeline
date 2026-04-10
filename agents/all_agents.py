@@ -79,9 +79,9 @@ def run_trend_agent():
 - 已做过的选题：{', '.join(profile['past_topics']) if profile['past_topics'] else '暂无记录'}
 
 请搜索并分析以下内容：
-1. 当前"AI+职场效率"赛道在各平台的热门话题和讨论趋势
+1. 当前"AI+职场效率or超级个体or一人公司orAI原生组织or最新AI趋势动态or最新AI工具skill"赛道在各平台的热门话题和讨论趋势
 2. 最近7天涨势明显的内容类型和表达方式
-3. 目标受众（职场人）最近在焦虑什么、讨论什么
+3. 目标受众（职场人）最近在焦虑什么、讨论什么、最新AI趋势动态对企业组织及打工人的影响以及企业和普通人应该如何应对的建议
 4. 哪些选题角度还没有被大量创作者覆盖（蓝海机会）
 
 基于搜索结果，输出情报卡JSON：
@@ -114,7 +114,6 @@ def run_trend_agent():
 
 只输出JSON。"""
 
-    # 趋势情报官用带搜索能力的模型
     model = os.environ.get("TREND_MODEL", "perplexity/llama-3.1-sonar-large-128k-online")
     raw = _call_llm(prompt, model)
     return _parse_json(raw)
@@ -214,7 +213,16 @@ def run_script_agent(structure, rewrite_instruction=None):
 1. 严格符合创作者的语言风格，像她本人在说话
 2. 每句不超过20字，口语化
 3. 有具体场景和细节，不泛泛而谈
-4. 每个操作步骤必须点名具体AI工具
+4. 【工具具体化硬要求，违反视为不合格】凡涉及工具操作的地方，必须同时满足三点：
+   a. 说出真实产品名称（如Claude、Kimi、飞书妙记、Notion、豆包等），
+      严禁用"某AI工具""相关工具""AI""智能工具"等模糊表达代替；
+   b. 用一句口语化的话说明为什么用这个工具——它最擅长什么、有什么独特优势，
+      格式参考："用XX，因为它擅长____"或"选XX是因为它____"，
+      例如："用飞书妙记，因为它能自动识别谁说了什么，不用你手动区分发言人"，
+      例如："用Claude，因为它中文长文理解特别强，几千字的内容它能精准抓重点"；
+   c. 操作步骤具体到用户听完能立刻照做，
+      说"打开XX，新建对话，把文字稿全选复制进去，粘贴这段指令，点发送"，
+      严禁说"把内容扔给AI处理""让AI来完成""交给AI就好了"之类无法操作的表达。
 5. 有方法论，讲清楚底层逻辑
 6. 最后一句必须是：{profile['signature_ending']}
 7. 严禁出现：{', '.join(profile['banned_words'])}
@@ -242,9 +250,10 @@ def run_emotion_agent(script):
 2. 加入真实情绪起伏：焦虑→顿悟→轻松
 3. 关键转折要有"原来如此"的释然感
 4. 去掉所有书面腔，说人话
-5. 保留所有具体AI工具名称，不能删掉
-6. 保留结尾：{profile['signature_ending']}
-7. 严禁出现：{', '.join(profile['banned_words'])}
+5. 保留所有具体AI工具名称及其"为什么用它"的说明，不能删掉或模糊化
+6. 保留所有具体操作步骤，不能缩写成"扔给AI处理"之类的表达
+7. 保留结尾：{profile['signature_ending']}
+8. 严禁出现：{', '.join(profile['banned_words'])}
 script字段内换行用\\n，不用真实换行符。
 
 只输出JSON：{{"script": "优化后脚本", "word_count": 字数, "emotion_changes": ["改动1", "改动2"]}}"""
@@ -268,13 +277,16 @@ def run_review_agent(script):
 5维度打分（每项0-2分）：
 1. 具体场景感：有没有真实职场细节
 2. 共鸣度：目标受众（职场人）会不会说"这说的就是我"
-3. 可应用性：每步有没有点名具体AI工具，能直接照着做
+3. 可应用性（最严格审查）：
+   - 2分：每个工具都有真实产品名 + 一句话说明为什么用它/它擅长什么 + 具体到用户听完能立刻上手的操作步骤，三项全满足
+   - 1分：有工具名，但缺少"为什么用它"的说明，或操作步骤仍停留在"扔给AI""让AI来处理"等模糊表达
+   - 0分：出现"某AI工具""相关工具""智能工具""交给AI""扔给AI处理"等任何模糊表达，直接0分，不论其他内容多好
 4. 方法论深度：有没有讲清楚底层逻辑
 5. 风格契合度：是否符合创作者"真实在职非技术"的风格
 
-检查违规：{', '.join(profile['banned_words'])}，有则直接不通过。
+检查违规词：{', '.join(profile['banned_words'])}，有则直接不通过。
 
-只输出JSON：{{"score": 分数, "dimension_scores": {{"场景感": 分, "共鸣度": 分, "可应用": 分, "方法论": 分, "风格": 分}}, "weak_points": ["弱点1", "弱点2"]}}"""
+只输出JSON：{{"score": 分数, "dimension_scores": {{"场景感": 分, "共鸣度": 分, "可应用": 分, "方法论": 分, "风格": 分}}, "weak_points": ["弱点1", "弱点2"], "vague_tool_expressions": ["脚本中发现的模糊工具表达（如有）"]}}"""
 
     critic_prompt = f"""你是毒舌编辑，只找硬伤。
 
@@ -282,17 +294,28 @@ def run_review_agent(script):
 
 三个问题：哪里无聊？哪里像AI写的？哪里用户会划走？
 
-只输出JSON：{{"boring_parts": ["1", "2"], "ai_sounding": ["1", "2"], "drop_points": ["1", "2"]}}"""
+额外检查：脚本里有没有"某AI""扔给AI""让AI来处理""交给AI"之类让用户看完还是不知道该用什么工具、怎么操作的废话？如有，列出来。
+
+只输出JSON：{{"boring_parts": ["1", "2"], "ai_sounding": ["1", "2"], "drop_points": ["1", "2"], "vague_tool_issues": ["发现的模糊工具问题（如有）"]}}"""
 
     editor_result = _parse_json(_call_llm(editor_prompt, os.environ.get("REVIEW_EDITOR_MODEL", "anthropic/claude-sonnet-4.6")))
     critic_result = _parse_json(_call_llm(critic_prompt, os.environ.get("REVIEW_CRITIC_MODEL", "google/gemini-3.1-pro-preview")))
 
     final_prompt = f"""你是总编，综合两份审稿给出最终裁决。
 
-主编：{json.dumps(editor_result, ensure_ascii=False)}
-毒舌：{json.dumps(critic_result, ensure_ascii=False)}
+主编打分：{json.dumps(editor_result, ensure_ascii=False)}
+毒舌反馈：{json.dumps(critic_result, ensure_ascii=False)}
 
-只输出JSON：{{"passed": true或false, "total_score": 分, "fail_reasons": ["原因"], "rewrite_instruction": "重写指令（不通过时必填，直接告诉脚本工程师改哪里）", "review_summary": "一句话总结"}}"""
+裁决规则：
+1. 正常综合两份审稿给出总分和通过/不通过判断
+2. 【硬性退回规则，优先级最高】满足以下任一条件，无论总分多高，must输出 passed: false：
+   - 主编"可应用"维度得分为0
+   - editor_result 的 vague_tool_expressions 字段非空（发现了模糊工具表达）
+   - critic_result 的 vague_tool_issues 字段非空（发现了模糊工具问题）
+   退回时，rewrite_instruction必须明确指出：哪些位置存在模糊工具表达、应改成什么（真实工具名+为什么用它+具体操作步骤）
+3. 通过标准：总分≥7.0 且 可应用维度≥1.5 且 无模糊工具表达
+
+只输出JSON：{{"passed": true或false, "total_score": 分, "fail_reasons": ["原因"], "rewrite_instruction": "重写指令（不通过时必填，直接告诉脚本工程师改哪里、怎么改）", "review_summary": "一句话总结"}}"""
 
     final_result = _parse_json(_call_llm(final_prompt, os.environ.get("REVIEW_FINAL_MODEL", "openai/gpt-5.4-mini")))
     final_result["editor_score"] = editor_result
